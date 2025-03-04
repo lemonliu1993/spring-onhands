@@ -9,5 +9,7 @@ public class Test {
 
     public static void main(String[] args) {
         LemonApplicationContext lemonApplicationContext = new LemonApplicationContext(AppConfig.class);
+
+        Object userService = lemonApplicationContext.getBean("userService");
     }
 }
