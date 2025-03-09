@@ -1,5 +1,6 @@
 package com.lemon;
 
+import com.lemon.service.UserService;
 import com.spring.LemonApplicationContext;
 
 /**
@@ -10,6 +11,15 @@ public class Test {
     public static void main(String[] args) {
         LemonApplicationContext lemonApplicationContext = new LemonApplicationContext(AppConfig.class);
 
-        Object userService = lemonApplicationContext.getBean("userService");
+
+        System.out.println(lemonApplicationContext.getBean("userService"));
+        System.out.println(lemonApplicationContext.getBean("userService"));
+        System.out.println(lemonApplicationContext.getBean("userService"));
+
+        UserService userService = (UserService)lemonApplicationContext.getBean("userService");
+        userService.test();
+//        Object userService = lemonApplicationContext.getBean("userService");    //map  <beanName,bean对象>
+//        Object userService1 = lemonApplicationContext.getBean("userService");
+//        Object userService2 = lemonApplicationContext.getBean("userService");
     }
 }
