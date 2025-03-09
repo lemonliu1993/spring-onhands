@@ -15,8 +15,8 @@ public class LemonApplicationContext {
 
     private Class configClass;
 
-    private ConcurrentHashMap<String,Object> singletonObjects = new ConcurrentHashMap<String, Object>();    //单例池
-    private ConcurrentHashMap<String,BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<String, BeanDefinition>();
+    private ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<String, Object>();    //单例池
+    private ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<String, BeanDefinition>();
 
     public LemonApplicationContext(Class configClass) {
         this.configClass = configClass;
@@ -25,36 +25,40 @@ public class LemonApplicationContext {
         //ComponentScan注解--->扫描路径 --->扫描--->Beandefinition -->BeanDefinitionMap
         scan(configClass);
 
-        for(Map.Entry<String,BeanDefinition> entry :beanDefinitionMap.entrySet()){
+        for (Map.Entry<String, BeanDefinition> entry : beanDefinitionMap.entrySet()) {
             String beanName = entry.getKey();
             BeanDefinition beanDefinition = entry.getValue();
 
-            if(beanDefinition.getScope().equals("singleton")){
-                Object bean = createBean(beanDefinition);//单例Bean
-                singletonObjects.put(beanName,bean);
+            if (beanDefinition.getScope().equals("singleton")) {
+                Object bean = createBean(beanName, beanDefinition);//单例Bean
+                singletonObjects.put(beanName, bean);
 
             }
         }
     }
 
 
-    public Object createBean(BeanDefinition beanDefinition){
+    public Object createBean(String beanName, BeanDefinition beanDefinition) {
         Class clazz = beanDefinition.getClazz();
         try {
             Object instance = clazz.getDeclaredConstructor().newInstance();
 
             //依赖注入
 
-            for(Field declaredField : clazz.getDeclaredFields()){
-                if(declaredField.isAnnotationPresent(Autowired.class)){
+            for (Field declaredField : clazz.getDeclaredFields()) {
+                if (declaredField.isAnnotationPresent(Autowired.class)) {
 
                     //Spring 在给属性赋值时，会根据属性的信息从容器里找一个值
                     Object bean = getBean(declaredField.getName());
 
                     declaredField.setAccessible(true);
-                    declaredField.set(instance,bean);
+                    declaredField.set(instance, bean);
                     //如果此时单例池里还没有对应的bean怎么办？
                 }
+            }
+
+            if (instance instanceof BeanNameAware) {
+                ((BeanNameAware) instance).setBeanName(beanName);
             }
 
             return instance;
@@ -76,9 +80,9 @@ public class LemonApplicationContext {
         //解析配置类
         //ComponentScan注解 -->扫描路径 -->扫描
 
-        ComponentScan componentScanAnnotation = (ComponentScan)configClass.getDeclaredAnnotation(ComponentScan.class);
+        ComponentScan componentScanAnnotation = (ComponentScan) configClass.getDeclaredAnnotation(ComponentScan.class);
         String path = componentScanAnnotation.value();  //扫描路径
-        path = path.replace(".","/");
+        path = path.replace(".", "/");
 
 
         //扫描
@@ -88,13 +92,13 @@ public class LemonApplicationContext {
         ClassLoader classLoader = LemonApplicationContext.class.getClassLoader();//app
         URL resource = classLoader.getResource(path);
         File file = new File(resource.getFile());
-        if(file.isDirectory()){
+        if (file.isDirectory()) {
             File[] files = file.listFiles();
 
-            for(File f: files){
+            for (File f : files) {
                 String fileName = f.getAbsolutePath();
 
-                if(fileName.endsWith(".class")){
+                if (fileName.endsWith(".class")) {
                     //取com开头 到.class 结尾中间的
                     String className = fileName.substring(fileName.indexOf("com"), fileName.indexOf(".class"));
                     String classNameReplace = className.replace("/", ".");
@@ -117,15 +121,15 @@ public class LemonApplicationContext {
 
                             BeanDefinition beanDefinition = new BeanDefinition();
 
-                            if(clazz.isAnnotationPresent(Scope.class)){
+                            if (clazz.isAnnotationPresent(Scope.class)) {
                                 Scope scopeAnnotation = clazz.getDeclaredAnnotation(Scope.class);
                                 beanDefinition.setScope(scopeAnnotation.value());
-                            }else{
+                            } else {
                                 beanDefinition.setScope("singleton");
                             }
                             beanDefinition.setClazz(clazz);
 
-                            beanDefinitionMap.put(beanName,beanDefinition);
+                            beanDefinitionMap.put(beanName, beanDefinition);
 
                         }
                     } catch (ClassNotFoundException e) {
@@ -138,19 +142,19 @@ public class LemonApplicationContext {
         }
     }
 
-    public Object getBean(String beanName){
-        if(beanDefinitionMap.containsKey(beanName)){
+    public Object getBean(String beanName) {
+        if (beanDefinitionMap.containsKey(beanName)) {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
-            if(beanDefinition.getScope().equals("singleton")){
+            if (beanDefinition.getScope().equals("singleton")) {
                 Object o = singletonObjects.get(beanName);
                 return o;
-            }else{
+            } else {
                 //创建Bean对象
-                Object bean = createBean(beanDefinition);
+                Object bean = createBean(beanName, beanDefinition);
                 return bean;
 
             }
-        }else{
+        } else {
             //不存在对应的Bean
             throw new NullPointerException();
         }
