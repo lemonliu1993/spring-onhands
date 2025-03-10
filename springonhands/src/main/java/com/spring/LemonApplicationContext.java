@@ -61,6 +61,14 @@ public class LemonApplicationContext {
                 ((BeanNameAware) instance).setBeanName(beanName);
             }
 
+            if (instance instanceof InitializingBean) {
+                try {
+                    ((InitializingBean) instance).afterPropertiesSet();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             return instance;
         } catch (InstantiationException e) {
             e.printStackTrace();
