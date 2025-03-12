@@ -5,6 +5,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,6 +19,7 @@ public class LemonApplicationContext {
 
     private ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<String, Object>();    //单例池
     private ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<String, BeanDefinition>();
+    private List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
 
     public LemonApplicationContext(Class configClass) {
         this.configClass = configClass;
@@ -57,10 +60,17 @@ public class LemonApplicationContext {
                 }
             }
 
+            //Aware回调
             if (instance instanceof BeanNameAware) {
                 ((BeanNameAware) instance).setBeanName(beanName);
             }
 
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+                //传入的对象和返回的可能并不是同一个对象
+                instance = beanPostProcessor.postPorcessorBeforeInitialization(instance, beanName);
+            }
+
+            //初始化
             if (instance instanceof InitializingBean) {
                 try {
                     ((InitializingBean) instance).afterPropertiesSet();
@@ -68,6 +78,13 @@ public class LemonApplicationContext {
                     e.printStackTrace();
                 }
             }
+
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+                //传入的对象和返回的可能并不是同一个对象
+                instance = beanPostProcessor.postPorcessorAfterInitialization(instance, beanName);
+            }
+
+            //BeanPostProcessor
 
             return instance;
         } catch (InstantiationException e) {
@@ -124,6 +141,15 @@ public class LemonApplicationContext {
                             //BeanDefinition
 
                             //解析类--->BeanDefinition
+
+                            //Spring 中不是这样直接new出来的，而是通过Spring的getBean获取的，这样其中的@Autowire的属性也可以注入
+                            if(BeanPostProcessor.class.isAssignableFrom(clazz)){
+                                //直接实例化
+                                BeanPostProcessor instance = (BeanPostProcessor) clazz.getDeclaredConstructor().newInstance();
+                                beanPostProcessorList.add(instance);
+                            }
+
+
                             Component componentAnnotation = clazz.getDeclaredAnnotation(Component.class);
                             String beanName = componentAnnotation.value();
 
@@ -141,6 +167,14 @@ public class LemonApplicationContext {
 
                         }
                     } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
                         e.printStackTrace();
                     }
 
