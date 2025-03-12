@@ -142,9 +142,10 @@ public class LemonApplicationContext {
 
                             //解析类--->BeanDefinition
 
-                            //Spring 中不是这样直接new出来的，而是通过Spring的getBean获取的，这样其中的@Autowire的属性也可以注入
+                            //如果是BeanPostProcessor的子类
                             if(BeanPostProcessor.class.isAssignableFrom(clazz)){
                                 //直接实例化
+                                //Spring 中不是这样直接new出来的，而是通过Spring的getBean获取的，这样其中的@Autowire的属性也可以注入
                                 BeanPostProcessor instance = (BeanPostProcessor) clazz.getDeclaredConstructor().newInstance();
                                 beanPostProcessorList.add(instance);
                             }
