@@ -13,11 +13,11 @@ public class Test {
 
 
         System.out.println(lemonApplicationContext.getBean("userService"));
-        System.out.println(lemonApplicationContext.getBean("userService"));
-        System.out.println(lemonApplicationContext.getBean("userService"));
+//        System.out.println(lemonApplicationContext.getBean("userService"));
+//        System.out.println(lemonApplicationContext.getBean("userService"));
 
         UserService userService = (UserService)lemonApplicationContext.getBean("userService");
-        userService.test();
+        userService.test();     //1.代理对象  2.业务test
 //        Object userService = lemonApplicationContext.getBean("userService");    //map  <beanName,bean对象>
 //        Object userService1 = lemonApplicationContext.getBean("userService");
 //        Object userService2 = lemonApplicationContext.getBean("userService");
